@@ -4,3 +4,8 @@ __pycache__/
 *.log
 *.txt
 .env
+.vercel
+node_modules/
+dist/
+build/
+*.egg-info/
