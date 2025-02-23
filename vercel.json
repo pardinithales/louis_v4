@@ -1,21 +1,27 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "rag_interface.py",
-        "use": "@vercel/python",
-        "config": { "maxLambdaSize": "50mb" }
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "rag_interface.py"
-      }
-    ],
-    "env": {
-      "GOOGLE_API_KEY": "",
-      "KDBAI_ENDPOINT": "",
-      "KDBAI_API_KEY": ""
+  "version": 2,
+  "builds": [
+    {
+      "src": "rag_interface.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "50mb" }
     }
+  ],
+  "routes": [
+    {
+      "src": "/upload_pdf",
+      "dest": "rag_interface.py",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/query",
+      "dest": "rag_interface.py",
+      "methods": ["GET"]
+    }
+  ],
+  "env": {
+    "GOOGLE_API_KEY": "",
+    "KDBAI_ENDPOINT": "",
+    "KDBAI_API_KEY": ""
   }
+}
