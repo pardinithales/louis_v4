@@ -1,0 +1,6 @@
+pykx-env/
+*.pyc
+__pycache__/
+*.log
+*.txt
+.env
