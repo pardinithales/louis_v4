@@ -5,10 +5,20 @@ from pathlib import Path
 import time
 from datetime import datetime
 import json
+import os
 
 # Configurar logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Configurar chaves de API
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
+KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+# Configurar URL do backend
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
 
 # Configurar a página
 st.title("RAG Interface para Processamento de PDFs")
@@ -48,7 +58,7 @@ else:
                 files = {
                     "file": (pdf_path.name, pdf_file, "application/pdf")
                 }
-                url = "http://localhost:8000/upload_pdf"
+                url = f"{BACKEND_URL}/upload_pdf"
                 response = requests.post(url, files=files)
                 response.raise_for_status()
                 pdf_info = {
@@ -78,7 +88,7 @@ else:
                 "sempre em portugues-br"
             )
             full_query = f"{system_prompt}\n\nPergunta: {user_query}"
-            url = f"http://localhost:8000/query?user_query={full_query}"
+            url = f"{BACKEND_URL}/query?user_query={full_query}"
             response = requests.get(url)
             response.raise_for_status()
             return response.json()

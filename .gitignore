@@ -12,3 +12,4 @@ build/
 .venv/
 venv/
 temp.pdf
+.streamlit/secrets.toml
