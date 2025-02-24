@@ -23,22 +23,37 @@ def read_file_content(file_path: str) -> Optional[str]:
         print(f"Erro ao ler {file_path}: {e}")
         return None
 
+def should_skip_directory(dir_path: str, exclude_dir: str = None) -> bool:
+    """
+    Verifica se um diretório deve ser ignorado.
+    """
+    # Ignora __pycache__ e diretórios com -env (exceto se for o diretório específico a ser excluído)
+    if '__pycache__' in dir_path or ('-env' in os.path.basename(dir_path) and dir_path != exclude_dir):
+        return True
+    # Verifica se é o diretório específico a ser excluído
+    if exclude_dir and exclude_dir in dir_path:
+        return True
+    return False
+
 def list_files_to_clipboard(directory: str, exclude_dir: str = None):
     """
-    Lista todos os arquivos .py e .env no diretório especificado, excluindo um diretório específico.
+    Lista arquivos .py, .txt, .json e .env, excluindo diretórios específicos.
     """
     try:
         absolute_dir = os.path.abspath(directory)
         file_list = []
         
         # Extensões permitidas
-        allowed_extensions = ('.py', '.env')
+        allowed_extensions = ('.py', '.txt', '.json', '.env')
         
         # Percorrer diretório e subdiretórios
         for root, dirs, files in os.walk(absolute_dir):
-            # Pular o diretório excluído
-            if exclude_dir and exclude_dir in root:
+            # Filtrar diretórios a serem ignorados
+            if should_skip_directory(root, exclude_dir):
                 continue
+            
+            # Remover diretórios indesejados da lista para não percorrê-los
+            dirs[:] = [d for d in dirs if not should_skip_directory(os.path.join(root, d), exclude_dir)]
                 
             # Filtrar arquivos com extensões permitidas
             for file in files:
@@ -55,7 +70,8 @@ def list_files_to_clipboard(directory: str, exclude_dir: str = None):
         clipboard_content = "\n".join(file_list)
         pyperclip.copy(clipboard_content)
         
-        print("Lista de arquivos .py e .env copiada para o clipboard com sucesso!")
+        print(f"Lista de arquivos {', '.join(allowed_extensions)} copiada para o clipboard com sucesso!")
+        print("Diretórios ignorados: __pycache__ e pastas com -env")
         print("\nPré-visualização:\n")
         print(clipboard_content[:2000] + "..." if len(clipboard_content) > 2000 else clipboard_content)
         

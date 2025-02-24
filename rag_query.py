@@ -3,43 +3,72 @@ import kdbai_client as kdbai
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
+import logging
 
-# Carregar variáveis de ambiente do arquivo .env
+# Configurar logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Carregar variáveis de ambiente
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 KDBAI_ENDPOINT = os.getenv("KDBAI_ENDPOINT")
 KDBAI_API_KEY = os.getenv("KDBAI_API_KEY")
 
+# Configurar Gemini
+genai.configure(api_key=GOOGLE_API_KEY)
+gemini_model = genai.GenerativeModel(model_name="gemini-2.0-flash")  # Modelo válido
+
 # Configurar KDB.AI
+logger.debug("Conectando ao KDB.AI")
 kdbai_session = kdbai.Session(endpoint=KDBAI_ENDPOINT, api_key=KDBAI_API_KEY)
 kdbai_db = kdbai_session.database('default')
 kdbai_table = kdbai_db.table("pdf_chunks")
 
-# Carregar modelo de embedding (mesmo modelo do processar_pdfs.py)
+# Carregar modelo de embedding
+logger.debug("Carregando modelo de embedding")
 embed_model = SentenceTransformer("all-mpnet-base-v2")
 
-def perform_rag_query(user_query="What are the molecular mechanisms of DM1 in this paper?"):
-    """Realiza uma consulta RAG usando busca vetorial no KDB.AI e geração de resposta com Gemini."""
-    # Gerar embedding da consulta
-    qvec = embed_model.encode(user_query).astype("float32")
-
-    # Busca vetorial no KDB.AI (top 3 chunks mais relevantes)
-    search_results = kdbai_table.search(
-        vectors={"vectors": qvec.tolist()},
-        n=3
-    )
-
-    # Extrair os textos relevantes (ajustado para a coluna 'vectors')
-    contexts = [result["text"] for result in search_results[0]]
-
-    # Configurar a API do Gemini
-    genai.configure(api_key=GOOGLE_API_KEY)
-    gemini_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
-
-    # Gerar resposta com o Gemini
-    prompt = f"Pergunta: {user_query}\nContexto: {' '.join(contexts)}"
-    response = gemini_model.generate_content(prompt)
-    return response.text
+def perform_rag_query(user_query="What are the molecular mechanisms of DM1?"):
+    try:
+        logger.debug("Verificando índices na tabela pdf_chunks")
+        indexes = kdbai_table.indexes  # Atributo, não função
+        
+        # Log dos índices disponíveis (para depuração)
+        logger.debug(f"Índices encontrados: {indexes}")
+        
+        if not indexes:
+            logger.warning("Nenhum índice encontrado. A busca pode falhar.")
+        
+        # Gerar embedding da consulta do usuário
+        query_embedding = embed_model.encode(user_query, show_progress_bar=False)
+        
+        # Realizar busca nos dados armazenados usando a coluna 'vectors'
+        search_result = kdbai_table.search(
+            vectors={"vectors": [query_embedding.tolist()]},  # Atualizado para 'vectors'
+            n=5  # Número de resultados a retornar
+        )
+        
+        # Extrair os chunks relevantes (assumindo que a coluna de texto é 'text')
+        if not search_result or not search_result[0]:
+            return "Nenhum resultado encontrado para a consulta."
+        
+        chunks = search_result[0]["text"]  # Ajuste o nome da coluna se necessário
+        
+        # Combinar os chunks em um contexto
+        context = "\n\n".join(chunks)
+        
+        # Gerar resposta com Gemini
+        prompt = f"Com base no seguinte contexto, responda à pergunta: {user_query}\n\nContexto:\n{context}"
+        response = gemini_model.generate_content(prompt)
+        
+        return response.text
+    
+    except Exception as e:
+        logger.error(f"Erro no perform_rag_query: {str(e)}")
+        raise
 
 if __name__ == "__main__":
-    print(perform_rag_query())
+    # Teste standalone
+    result = perform_rag_query("What are the molecular mechanisms of DM1?")
+    print(result)
