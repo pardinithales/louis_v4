@@ -6,19 +6,34 @@ import time
 from datetime import datetime
 import json
 import os
+import socket
 
 # Configurar logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Configurar chaves de API e backend URL a partir das secrets
+# Função para verificar se estamos em ambiente de desenvolvimento
+def is_development():
+    try:
+        return not st.runtime.exists()
+    except:
+        return True
+
+# Configurar URL do backend baseado no ambiente
+if is_development():
+    BACKEND_URL = "http://localhost:8000"
+    logger.info("Ambiente de desenvolvimento detectado, usando localhost")
+else:
+    BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
+    logger.info(f"Ambiente de produção detectado, usando URL: {BACKEND_URL}")
+
+# Configurar chaves de API
 try:
     # Carregar todas as secrets necessárias
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
     KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-    BACKEND_URL = "http://localhost:8000"  # Forçar uso do localhost para desenvolvimento
     
     # Carregar credenciais
     ALLOWED_USERS = {
@@ -27,7 +42,6 @@ try:
 except Exception as e:
     logger.warning(f"Erro ao carregar secrets: {str(e)}")
     st.error("⚠️ Erro ao carregar configurações. Usando configurações padrão para desenvolvimento.")
-    BACKEND_URL = "http://localhost:8000"
     ALLOWED_USERS = {"admin": "password123"}
 
 # Função para verificar conexão com backend
@@ -41,6 +55,10 @@ def check_backend_connection():
             return True
         logger.error(f"Backend retornou status code: {response.status_code}")
         return False
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Erro de conexão com o backend: {str(e)}")
+        st.error(f"⚠️ Erro de conexão: {str(e)}")
+        return False
     except Exception as e:
         logger.error(f"Erro ao verificar conexão com backend: {str(e)}")
         return False
@@ -49,8 +67,11 @@ def check_backend_connection():
 if not check_backend_connection():
     st.error("⚠️ Backend não está acessível. Por favor, verifique se o servidor está rodando.")
     st.info(f"Tentando conectar em: {BACKEND_URL}")
-    st.info("💡 Execute em um terminal separado: uvicorn rag_interface:app --host 0.0.0.0 --port 8000")
-    st.stop()  # Parar a execução até que o backend esteja disponível
+    st.info("💡 Execute em um terminal separado:")
+    st.code("cd C:\\Users\\Usuario\\Desktop\\teste")
+    st.code(".\\venv\\Scripts\\Activate")
+    st.code("uvicorn rag_interface:app --host 0.0.0.0 --port 8000")
+    st.stop()
 
 # Configurar a página
 st.title("RAG Interface para Processamento de PDFs")
