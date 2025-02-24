@@ -27,24 +27,31 @@ def should_skip_directory(dir_path: str, exclude_dir: str = None) -> bool:
     """
     Verifica se um diretório deve ser ignorado.
     """
-    # Ignora __pycache__ e diretórios com -env (exceto se for o diretório específico a ser excluído)
-    if '__pycache__' in dir_path or ('-env' in os.path.basename(dir_path) and dir_path != exclude_dir):
+    dir_name = os.path.basename(dir_path)
+    # Ignora __pycache__, diretórios com -env, venv (exceto se for o diretório específico a ser excluído)
+    if ('__pycache__' in dir_path or 
+        '-env' in dir_name or 
+        'venv' in dir_name and dir_path != exclude_dir):
         return True
     # Verifica se é o diretório específico a ser excluído
     if exclude_dir and exclude_dir in dir_path:
         return True
     return False
 
+def should_skip_file(file_name: str) -> bool:
+    """
+    Verifica se um arquivo deve ser ignorado.
+    """
+    # Ignora arquivos que começam com 'test'
+    return file_name.startswith('test')
+
 def list_files_to_clipboard(directory: str, exclude_dir: str = None):
     """
-    Lista arquivos .py, .txt, .json e .env, excluindo diretórios específicos.
+    Lista apenas arquivos .py, excluindo os que começam com 'test'.
     """
     try:
         absolute_dir = os.path.abspath(directory)
         file_list = []
-        
-        # Extensões permitidas
-        allowed_extensions = ('.py', '.txt', '.json', '.env')
         
         # Percorrer diretório e subdiretórios
         for root, dirs, files in os.walk(absolute_dir):
@@ -55,9 +62,9 @@ def list_files_to_clipboard(directory: str, exclude_dir: str = None):
             # Remover diretórios indesejados da lista para não percorrê-los
             dirs[:] = [d for d in dirs if not should_skip_directory(os.path.join(root, d), exclude_dir)]
                 
-            # Filtrar arquivos com extensões permitidas
+            # Filtrar apenas arquivos .py que não começam com 'test'
             for file in files:
-                if file.endswith(allowed_extensions):
+                if file.endswith('.py') and not should_skip_file(file):
                     item_path = os.path.join(root, file)
                     file_info = f"Nome: {file}\nLocalização: {item_path}\n"
                     
@@ -70,7 +77,7 @@ def list_files_to_clipboard(directory: str, exclude_dir: str = None):
         clipboard_content = "\n".join(file_list)
         pyperclip.copy(clipboard_content)
         
-        print(f"Lista de arquivos {', '.join(allowed_extensions)} copiada para o clipboard com sucesso!")
+        print(f"Lista de arquivos .py (exceto os que começam com 'test') copiada para o clipboard com sucesso!")
         print("Diretórios ignorados: __pycache__ e pastas com -env")
         print("\nPré-visualização:\n")
         print(clipboard_content[:2000] + "..." if len(clipboard_content) > 2000 else clipboard_content)
