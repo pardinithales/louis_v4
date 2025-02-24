@@ -11,40 +11,47 @@ import os
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Configurar chaves de API
+# Configurar chaves de API e backend URL a partir das secrets
 try:
+    # Carregar todas as secrets necessárias
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
     KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    BACKEND_URL = st.secrets["BACKEND_URL"]
+    
+    # Carregar credenciais
+    ALLOWED_USERS = {
+        st.secrets["credentials"]["username"]: st.secrets["credentials"]["password"]
+    }
 except Exception as e:
     logger.warning(f"Erro ao carregar secrets: {str(e)}")
-    st.error("⚠️ Erro ao carregar configurações. Por favor, verifique as variáveis de ambiente.")
-
-# Configurar URL do backend
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://177.84.61.159:8000')  # Seu IP público
+    st.error("⚠️ Erro ao carregar configurações. Por favor, verifique as secrets no Streamlit Cloud.")
+    BACKEND_URL = "http://177.84.61.159:8000"  # Fallback para desenvolvimento local
+    ALLOWED_USERS = {"admin": "password123"}  # Fallback para desenvolvimento local
 
 # Função para verificar conexão com backend
 def check_backend_connection():
     try:
-        requests.get(f"{BACKEND_URL}/health", timeout=5)
-        return True
-    except:
+        response = requests.get(f"{BACKEND_URL}/health", timeout=5)
+        if response.status_code == 200:
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Erro ao verificar conexão com backend: {str(e)}")
         return False
 
 # Verificar conexão com backend
 if not check_backend_connection():
     st.error("⚠️ Backend não está acessível. Por favor, verifique se o servidor está rodando.")
     st.info(f"Tentando conectar em: {BACKEND_URL}")
-    if BACKEND_URL == 'http://localhost:8000':
-        st.info("💡 Para desenvolvimento local, certifique-se que o backend está rodando com: uvicorn main:app --host 0.0.0.0 --port 8000")
+    st.info("💡 Certifique-se que o backend está rodando e acessível.")
 
 # Configurar a página
 st.title("RAG Interface para Processamento de PDFs")
 st.write("Carregue PDFs (somente com login) ou faça consultas sobre os PDFs processados.")
 
 # Simulação de controle de acesso para upload de PDFs (nome de usuário e senha simples)
-ALLOWED_USERS = {"admin": "password123"}  # Nome de usuário e senha para teste
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "current_user" not in st.session_state:
