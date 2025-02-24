@@ -12,13 +12,32 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Configurar chaves de API
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
-KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+try:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
+    KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except Exception as e:
+    logger.warning(f"Erro ao carregar secrets: {str(e)}")
+    st.error("⚠️ Erro ao carregar configurações. Por favor, verifique as variáveis de ambiente.")
 
 # Configurar URL do backend
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+
+# Função para verificar conexão com backend
+def check_backend_connection():
+    try:
+        requests.get(f"{BACKEND_URL}/health", timeout=5)
+        return True
+    except:
+        return False
+
+# Verificar conexão com backend
+if not check_backend_connection():
+    st.error("⚠️ Backend não está acessível. Por favor, verifique se o servidor está rodando.")
+    st.info(f"Tentando conectar em: {BACKEND_URL}")
+    if BACKEND_URL == 'http://localhost:8000':
+        st.info("💡 Para desenvolvimento local, certifique-se que o backend está rodando com: uvicorn main:app --host 0.0.0.0 --port 8000")
 
 # Configurar a página
 st.title("RAG Interface para Processamento de PDFs")
@@ -53,6 +72,10 @@ else:
 
     # Função para upload de PDF (somente para usuários autenticados)
     def upload_pdf(pdf_path):
+        if not check_backend_connection():
+            st.error("⚠️ Backend não está acessível. Não é possível fazer upload no momento.")
+            return None
+            
         try:
             with open(pdf_path, "rb") as pdf_file:
                 files = {
@@ -64,18 +87,22 @@ else:
                 pdf_info = {
                     "filename": pdf_path.name,
                     "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "summary": "Resumo não disponível (faça uma consulta para gerar)"  # Placeholder
+                    "summary": "Resumo não disponível (faça uma consulta para gerar)"
                 }
                 st.session_state.pdfs_processed.append(pdf_info)
                 return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao fazer upload do PDF: {str(e)}")
+            st.error("⚠️ Erro ao fazer upload do PDF. Verifique a conexão com o backend.")
             return None
 
-    # Função para consulta RAG com formato padrão (system prompt), disponível para todos
+    # Função para consulta RAG
     def query_rag(user_query):
+        if not check_backend_connection():
+            st.error("⚠️ Backend não está acessível. Não é possível fazer consultas no momento.")
+            return None
+            
         try:
-            # Formato padrão (system prompt) para garantir consistência
             system_prompt = (
                 "Você é um assistente especializado em responder perguntas sobre documentos médicos, "
                 "especialmente canalopatias musculares. Forneça respostas claras, concisas e baseadas "
@@ -94,6 +121,7 @@ else:
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao fazer consulta RAG: {str(e)}")
+            st.error("⚠️ Erro ao fazer consulta. Verifique a conexão com o backend.")
             return None
 
     # Interface para upload de PDF (somente se autenticado)

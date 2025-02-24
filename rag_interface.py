@@ -36,6 +36,9 @@ os.chdir(BASE_DIR)
 # Inicializar a aplicação FastAPI
 app = FastAPI(title="RAG Interface API", description="API para processamento de PDFs e consultas RAG")
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 @app.post("/upload_pdf")
 async def upload_pdf(file: UploadFile = File(...)):
