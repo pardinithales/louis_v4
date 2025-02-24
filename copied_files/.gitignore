@@ -1,0 +1,15 @@
+pykx-env/
+*.pyc
+__pycache__/
+*.log
+*.txt
+.env
+.vercel
+node_modules/
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+temp.pdf
+.streamlit/secrets.toml
