@@ -29,7 +29,11 @@ if is_development():
     BACKEND_URL = "http://localhost:8001"  # Forçado para testes locais
     logger.info("Ambiente de desenvolvimento detectado, usando backend local em porta 8001")
 else:
-    BACKEND_URL = st.secrets["general"]["BACKEND_URL_PROD"]
+    BACKEND_URL = os.getenv("BACKEND_URL")  # Usar variável de ambiente em produção
+    if not BACKEND_URL:
+        logger.error("BACKEND_URL não definido em produção!")
+        st.error("⚠️ Configuração do backend não encontrada!")
+        st.stop()
     logger.info("Ambiente de produção detectado, usando backend remoto")
 
 logger.info(f"Usando backend em: {BACKEND_URL}")
@@ -58,7 +62,7 @@ def check_backend_connection():
         if response.status_code == 200:
             st.success("✅ Backend conectado com sucesso!")
             return True
-        logger.error(f"Backend retornou status code: {response.status_code}")
+        logger.error(f"Backend retornou status code: {response.status_code} - {response.text}")
         return False
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Erro de conexão com o backend: {str(e)}")
@@ -149,12 +153,13 @@ else:
                 "Sempre responda em português brasileiro."
             )
             full_query = f"{system_prompt}\n\nPergunta: {user_query}"
+            headers = {"Content-Type": "application/json"}
             url = f"{BACKEND_URL}/query?user_query={full_query}"
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Erro ao fazer consulta RAG: {str(e)}")
+            logger.error(f"Erro ao fazer consulta RAG: {str(e)} - Resposta: {response.text if 'response' in locals() else 'sem resposta'}")
             st.error("⚠️ Erro ao fazer consulta. Verifique a conexão com o backend.")
             return None
 
