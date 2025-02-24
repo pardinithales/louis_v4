@@ -42,8 +42,14 @@ if not BACKEND_PORT:
     st.info("Por favor, verifique se há processos usando essas portas")
     st.stop()
 
-# Configurar URL do backend
-BACKEND_URL = st.secrets["general"]["BACKEND_URL"]
+# Configurar URL do backend baseado no ambiente
+if is_development():
+    BACKEND_URL = st.secrets["general"]["BACKEND_URL_DEV"]
+    logger.info("Ambiente de desenvolvimento detectado, usando backend local")
+else:
+    BACKEND_URL = st.secrets["general"]["BACKEND_URL_PROD"]
+    logger.info("Ambiente de produção detectado, usando backend remoto")
+
 logger.info(f"Usando backend em: {BACKEND_URL}")
 
 # Configurar chaves de API
