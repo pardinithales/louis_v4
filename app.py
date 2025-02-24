@@ -22,7 +22,7 @@ except Exception as e:
     st.error("⚠️ Erro ao carregar configurações. Por favor, verifique as variáveis de ambiente.")
 
 # Configurar URL do backend
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://177.84.61.159:8000')  # Seu IP público
 
 # Função para verificar conexão com backend
 def check_backend_connection():
