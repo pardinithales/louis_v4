@@ -12,6 +12,22 @@ import socket
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Função para verificar se uma porta está disponível
+def is_port_available(port):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('localhost', port))
+            return True
+    except:
+        return False
+
+# Função para encontrar uma porta disponível
+def find_available_port(start_port=8000, max_port=8010):
+    for port in range(start_port, max_port):
+        if is_port_available(port):
+            return port
+    return None
+
 # Função para verificar se estamos em ambiente de desenvolvimento
 def is_development():
     try:
@@ -19,13 +35,16 @@ def is_development():
     except:
         return True
 
-# Configurar URL do backend baseado no ambiente
-if is_development():
-    BACKEND_URL = "http://localhost:8000"
-    logger.info("Ambiente de desenvolvimento detectado, usando localhost")
-else:
-    BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
-    logger.info(f"Ambiente de produção detectado, usando URL: {BACKEND_URL}")
+# Encontrar porta disponível para o backend
+BACKEND_PORT = find_available_port()
+if not BACKEND_PORT:
+    st.error("⚠️ Não foi possível encontrar uma porta disponível (8000-8010)")
+    st.info("Por favor, verifique se há processos usando essas portas")
+    st.stop()
+
+# Configurar URL do backend
+BACKEND_URL = "http://localhost:8001"  # Nova porta
+logger.info(f"Usando backend em: {BACKEND_URL}")
 
 # Configurar chaves de API
 try:
@@ -70,7 +89,7 @@ if not check_backend_connection():
     st.info("💡 Execute em um terminal separado:")
     st.code("cd C:\\Users\\Usuario\\Desktop\\teste")
     st.code(".\\venv\\Scripts\\Activate")
-    st.code("uvicorn rag_interface:app --host 0.0.0.0 --port 8000")
+    st.code(f"uvicorn rag_interface:app --host 0.0.0.0 --port {BACKEND_PORT}")
     st.stop()
 
 # Configurar a página
