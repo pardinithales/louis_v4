@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+supabase
+sentence-transformers
+google-generativeai
+PyPDF2
+python-multipart
+streamlit
+requests
