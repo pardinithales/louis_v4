@@ -43,16 +43,16 @@ if not BACKEND_PORT:
     st.stop()
 
 # Configurar URL do backend
-BACKEND_URL = "http://localhost:8001"  # Nova porta
+BACKEND_URL = st.secrets["general"]["BACKEND_URL"]
 logger.info(f"Usando backend em: {BACKEND_URL}")
 
 # Configurar chaves de API
 try:
     # Carregar todas as secrets necessárias
-    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-    KDBAI_ENDPOINT = st.secrets["KDBAI_ENDPOINT"]
-    KDBAI_API_KEY = st.secrets["KDBAI_API_KEY"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    GOOGLE_API_KEY = st.secrets["api_keys"]["GOOGLE_API_KEY"]
+    KDBAI_ENDPOINT = st.secrets["api_keys"]["KDBAI_ENDPOINT"]
+    KDBAI_API_KEY = st.secrets["api_keys"]["KDBAI_API_KEY"]
+    SUPABASE_KEY = st.secrets["api_keys"]["SUPABASE_KEY"]
     
     # Carregar credenciais
     ALLOWED_USERS = {

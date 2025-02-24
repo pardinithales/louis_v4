@@ -94,6 +94,9 @@ async def query_rag(user_query: str):
 
 if __name__ == "__main__":
     import uvicorn
-    PORT = 8001  # Nova porta
+    import sys
+    
+    # Usar porta fornecida como argumento ou 8000 como padrão
+    PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     logger.info(f"Iniciando servidor na porta {PORT}")
     uvicorn.run(app, host="0.0.0.0", port=PORT)
